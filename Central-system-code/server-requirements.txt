@@ -1,0 +1,33 @@
+#server-requirements.txt
+
+#Python Requirements for Emergency Helmet System Server
+#Install with: pip install -r server-requirements.txt
+
+
+#Core Web Framework
+Flask==2.3.3
+Flask-CORS==4.0.0
+
+#MQTT Communication
+paho-mqtt==1.6.1
+
+#Database
+sqlite3   Usually included with Python
+
+#Email/SMTP for alerts (built-in, no extra install needed)
+smtplib
+email
+
+#Web Browser Automation
+webbrowser   Built-in
+
+#Additional Utilities
+threading   Built-in
+queue       Built-in
+logging     Built-in
+json        Built-in
+time        Built-in
+datetime    Built-in
+os          Built-in
+sys         Built-in
+signal      Built-in
