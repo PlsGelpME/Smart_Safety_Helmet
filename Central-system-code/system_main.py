@@ -221,14 +221,14 @@ class EmergencyHelmetSystem:
                 if section not in self.config:
                     raise ValueError(f"Missing required configuration section: {section}")
             
-            print(f"✅ Configuration loaded successfully from {self.config_path}")
+            print(f"Configuration loaded successfully from {self.config_path}")
             return True
             
         except json.JSONDecodeError as e:
-            print(f"❌ Error parsing configuration file: {e}")
+            print(f"Error parsing configuration file: {e}")
             return False
         except Exception as e:
-            print(f"❌ Error loading configuration: {e}")
+            print(f"Error loading configuration: {e}")
             return False
     
     def _create_default_config(self):
@@ -340,11 +340,11 @@ class EmergencyHelmetSystem:
             # Register custom handlers for GUI updates
             self._register_gui_handlers()
             
-            self.logger.info("✅ All components initialized successfully")
+            self.logger.info("All components initialized successfully")
             return True
             
         except Exception as e:
-            self.logger.error(f"❌ Failed to initialize components: {e}")
+            self.logger.error(f"Failed to initialize components: {e}")
             return False
     
     def _register_gui_handlers(self):
@@ -378,14 +378,14 @@ class EmergencyHelmetSystem:
     
     def _handle_immediate_emergency(self, device_id, data):
         """Handle immediate emergency notifications"""
-        self.logger.critical(f"🚨 IMMEDIATE EMERGENCY: Device {device_id} - {data}")
+        self.logger.critical(f"IMMEDIATE EMERGENCY: Device {device_id} - {data}")
         
         # Visual alert in CLI
-        print(f"\n{'🚨' * 20}")
-        print(f"🚨 EMERGENCY ALERT - Device: {device_id}")
-        print(f"🚨 Type: {data.get('message', 'Unknown')}")
-        print(f"🚨 Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"{'🚨' * 20}\n")
+        print(f"\n{'!!!'* 20}")
+        print(f"EMERGENCY ALERT - Device: {device_id}")
+        print(f"Type: {data.get('message', 'Unknown')}")
+        print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"{'!!!'* 20}\n")
     
     def start(self):
         """Start the complete helmet monitoring system with GUI"""
@@ -398,7 +398,7 @@ class EmergencyHelmetSystem:
             return
         
         try:
-            self.logger.info("🚀 Starting Emergency Helmet System...")
+            self.logger.info("Starting Emergency Helmet System...")
             self.start_time = datetime.now()
             self.is_running = True
             
@@ -408,27 +408,27 @@ class EmergencyHelmetSystem:
             # Auto-open browser if configured
             web_config = self.config['monitoring'].get('web_dashboard', {})
             if web_config.get('auto_open_browser', True):
-                self.logger.info("🌐 Opening web browser automatically...")
+                self.logger.info("Opening web browser automatically...")
                 self.web_dashboard.open_browser()
             
             # Start database manager
             self.db_manager.start()
-            self.logger.info("💾 Database manager started")
+            self.logger.info("Database manager started")
             
             # Start MQTT receiver
             self.mqtt_receiver.start()
-            self.logger.info("📡 MQTT receiver started")
+            self.logger.info("MQTT receiver started")
             
-            self.logger.info("✅ Emergency Helmet System started successfully")
+            self.logger.info("Emergency Helmet System started successfully")
             self._run_main_loop()
             
         except Exception as e:
-            self.logger.error(f"❌ Failed to start system: {e}")
+            self.logger.error(f"Failed to start system: {e}")
             self.stop()
     
     def _run_main_loop(self):
         """Main system monitoring and management loop"""
-        self.logger.info("📊 Entering main monitoring loop...")
+        self.logger.info("Entering main monitoring loop...")
         
         last_stats_time = time.time()
         stats_interval = self.config['monitoring']['stats_interval']
@@ -489,31 +489,31 @@ class EmergencyHelmetSystem:
         uptime_str = str(uptime).split('.')[0]
         
         print(f"\n{'='*70}")
-        print(f"🛡️  EMERGENCY HELMET SYSTEM - REAL-TIME MONITORING")
+        print(f"️  EMERGENCY HELMET SYSTEM - REAL-TIME MONITORING")
         print(f"{'='*70}")
-        print(f"⏰ Uptime: {uptime_str} | 📨 Total Messages: {self.message_count}")
-        print(f"🌐 Web GUI: http://localhost:{self.config['monitoring']['web_dashboard']['port']}")
+        print(f" Uptime: {uptime_str} | 📨 Total Messages: {self.message_count}")
+        print(f" Web GUI: http://localhost:{self.config['monitoring']['web_dashboard']['port']}")
         print(f"")
-        print(f"📡 MQTT RECEIVER:")
-        print(f"  ✅ Connected: {'Yes' if mqtt_stats['is_connected'] else '❌ No'}")
-        print(f"  📥 Received: {mqtt_stats['messages_received']}")
-        print(f"  📤 Processed: {mqtt_stats['messages_processed']}")
-        print(f"  🗂️  Buffer: {mqtt_stats['current_buffer_size']}/{mqtt_stats['buffer_capacity']}")
-        print(f"  ⚠️  Overflows: {mqtt_stats['buffer_overflows']}")
+        print(f" MQTT RECEIVER:")
+        print(f"   Connected: {'Yes' if mqtt_stats['is_connected'] else '❌ No'}")
+        print(f"   Received: {mqtt_stats['messages_received']}")
+        print(f"   Processed: {mqtt_stats['messages_processed']}")
+        print(f"  ️  Buffer: {mqtt_stats['current_buffer_size']}/{mqtt_stats['buffer_capacity']}")
+        print(f"    Overflows: {mqtt_stats['buffer_overflows']}")
         print(f"")
-        print(f"💾 DATABASE MANAGER:")
-        print(f"  📊 Queued: {db_stats['operations_queued']}")
-        print(f"  ✅ Completed: {db_stats['operations_completed']}")
-        print(f"  🗃️  Queue: {db_stats['queue_size']}/{db_stats['queue_capacity']}")
-        print(f"  🔄 Batch Inserts: {db_stats['batch_inserts']}")
-        print(f"  ❌ Errors: {db_stats['errors']}")
+        print(f" DATABASE MANAGER:")
+        print(f"   Queued: {db_stats['operations_queued']}")
+        print(f"   Completed: {db_stats['operations_completed']}")
+        print(f"  ️  Queue: {db_stats['queue_size']}/{db_stats['queue_capacity']}")
+        print(f"   Batch Inserts: {db_stats['batch_inserts']}")
+        print(f"   Errors: {db_stats['errors']}")
         print(f"")
-        print(f"🚨 ACTIVE EMERGENCIES: {len(self.web_dashboard.active_emergencies)}")
+        print(f" ACTIVE EMERGENCIES: {len(self.web_dashboard.active_emergencies)}")
         for device_id, emergency in self.web_dashboard.active_emergencies.items():
-            print(f"  🔴 {device_id}: {emergency.get('type', 'Unknown')}")
+            print(f"   {device_id}: {emergency.get('type', 'Unknown')}")
         print(f"{'='*70}")
-        print(f"💡 Tip: Check web GUI for detailed visualizations")
-        print(f"💡 Press Ctrl+C to stop the system")
+        print(f" Tip: Check web GUI for detailed visualizations")
+        print(f" Press Ctrl+C to stop the system")
         print(f"{'='*70}\n")
     
     def _check_system_health(self):
@@ -526,23 +526,23 @@ class EmergencyHelmetSystem:
         
         # Check for MQTT connection issues
         if not self.mqtt_receiver.is_connected:
-            self.logger.warning("❌ MQTT receiver is not connected to broker")
+            self.logger.warning(" MQTT receiver is not connected to broker")
         
         # Check for database queue issues
         queue_usage = db_stats['queue_size'] / db_stats['queue_capacity']
         if queue_usage > 0.8:
-            self.logger.warning(f"⚠️ Database queue is {queue_usage:.1%} full")
+            self.logger.warning(f"️ Database queue is {queue_usage:.1%} full")
         
         # Check for buffer overflows
         if mqtt_stats['buffer_overflows'] > 0:
-            self.logger.warning(f"⚠️ MQTT buffer has {mqtt_stats['buffer_overflows']} overflows")
-    
+            self.logger.warning(f" MQTT buffer has {mqtt_stats['buffer_overflows']} overflows")
+
     def stop(self):
         """Stop the complete system gracefully"""
         if not self.is_running:
             return
         
-        self.logger.info("🛑 Initiating system shutdown...")
+        self.logger.info(" Initiating system shutdown...")
         self.is_running = False
         
         try:
@@ -569,7 +569,7 @@ class EmergencyHelmetSystem:
             self.logger.info("✅ Emergency Helmet System stopped successfully")
             
         except Exception as e:
-            self.logger.error(f"❌ Error during shutdown: {e}")
+            self.logger.error(f" Error during shutdown: {e}")
         finally:
             # Ensure we exit cleanly
             sys.exit(0)
@@ -578,11 +578,11 @@ def main():
     """
     Main entry point for the Emergency Helmet System
     """
-    print("🚨 Emergency Helmet Monitoring System")
+    print(" Emergency Helmet Monitoring System")
     print("=" * 60)
-    print("🌐 Web GUI will open automatically")
-    print("📟 CLI will continue running for real-time monitoring")
-    print("💡 Use Ctrl+C to stop the system")
+    print(" Web GUI will open automatically")
+    print(" CLI will continue running for real-time monitoring")
+    print(" Use Ctrl+C to stop the system")
     print("=" * 60)
     
     # Parse command line arguments
@@ -595,7 +595,7 @@ def main():
         helmet_system = EmergencyHelmetSystem(config_path)
         helmet_system.start()
     except Exception as e:
-        print(f"❌ Fatal error: {e}")
+        print(f" Fatal error: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
