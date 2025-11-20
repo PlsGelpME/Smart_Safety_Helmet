@@ -1,0 +1,120 @@
+# MPU6050 Gyroscope Interface Module
+
+## Overview
+`__gyro__.py` is a MicroPython driver for the MPU6050 gyroscope and accelerometer sensor, specifically designed for free-fall detection in emergency monitoring systems.
+
+## Features
+- **Free-fall Detection**: Configurable threshold and duration settings
+- **Hardware Interrupts**: Pin-based interrupt triggering for real-time alerts
+- **I2C Communication**: 400kHz communication with direct register access
+- **Connection Verification**: Automatic sensor identification and communication checks
+- **Power Management**: Proper sensor wake-up and configuration
+
+## Hardware Requirements
+- MPU6050 Gyroscope/Accelerometer
+- ESP32 or compatible MicroPython board
+- I2C connections (SCL, SDA)
+- Interrupt pin for free-fall alerts
+
+## Installation
+```python
+from __gyro__ import GyroSetup
+```
+
+## Usage
+### Basic Initialization
+```python
+# Initialize with default pins
+gyro = GyroSetup(i2c_scl_pin=22, i2c_sda_pin=21, int_pin=4)
+
+# Configure free-fall detection
+gyro.configure_freefall(threshold=0x10, duration=0x05)
+```
+
+### Advanced Configuration
+```python
+# Custom free-fall parameters
+gyro.configure_freefall(
+    threshold=0x08,  # Lower threshold for higher sensitivity
+    duration=0x0A    # Longer duration for sustained detection
+)
+```
+
+## API Reference
+
+### Class: GyroSetup
+
+#### Constructor
+```python
+GyroSetup(i2c_scl_pin=22, i2c_sda_pin=21, int_pin=4, i2c_bus=0)
+```
+- `i2c_scl_pin`: I2C clock pin (default: 22)
+- `i2c_sda_pin`: I2C data pin (default: 21)
+- `int_pin`: Interrupt pin for free-fall detection (default: 4)
+- `i2c_bus`: I2C bus number (default: 0)
+
+#### Methods
+
+##### `verify_connection()`
+Verifies I2C communication with the MPU6050 sensor.
+- **Returns**: `True` if connection successful, `False` otherwise
+
+##### `configure_freefall(threshold=0x10, duration=0x05)`
+Configures the MPU6050 for free-fall detection.
+- `threshold`: Detection sensitivity (0x00-0xFF, default: 0x10 ~0.16g)
+- `duration`: Minimum duration for detection (0x00-0xFF, default: 0x05 ~5ms)
+- **Returns**: `True` if configuration successful
+- **Raises**: Exception if communication fails
+
+##### `get_interrupt_status()`
+Reads the interrupt status register.
+- **Returns**: Byte value of INT_STATUS register
+
+##### `is_initialized()`
+Checks if the sensor is properly initialized.
+- **Returns**: `True` if initialized, `False` otherwise
+
+#### Internal Methods
+- `_write_reg(reg, value)`: Write to MPU6050 register
+- `_read_reg(reg)`: Read from MPU6050 register
+
+## Register Definitions
+- `MPU6050_ADDR = 0x68`: I2C device address
+- `PWR_MGMT_1 = 0x6B`: Power management register
+- `INT_PIN_CFG = 0x37`: Interrupt pin configuration
+- `INT_ENABLE = 0x38`: Interrupt enable register
+- `INT_STATUS = 0x3A`: Interrupt status register
+- `FF_THR = 0x1D`: Free-fall threshold register
+- `FF_DUR = 0x1E`: Free-fall duration register
+- `WHO_AM_I = 0x75`: Device identification register
+
+## Default Configuration
+- **I2C Frequency**: 400kHz
+- **Interrupt Mode**: Active low, latched until cleared
+- **Free-fall Threshold**: 0x10 (approximately 0.16g)
+- **Free-fall Duration**: 0x05 (approximately 5ms)
+- **Power Mode**: Active (sleep mode disabled)
+
+## Error Handling
+- Automatically verifies sensor connection before configuration
+- Provides clear error messages for I2C communication failures
+- Validates sensor identity through WHO_AM_I register
+
+## Use Cases
+- Emergency fall detection systems
+- Motion-activated alerts
+- Impact detection in wearable devices
+- Safety monitoring applications
+
+## Troubleshooting
+1. **Connection Issues**: Verify I2C wiring and sensor address
+2. **No Interrupts**: Check interrupt pin configuration and pull-up resistors
+3. **Sensor Not Found**: Ensure proper power supply and I2C termination
+
+## Dependencies
+- `machine.I2C`
+- `machine.Pin`
+- `time`
+
+## License
+MicroPython Hardware Driver

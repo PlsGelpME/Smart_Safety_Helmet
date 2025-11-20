@@ -1,0 +1,166 @@
+# MAX30100 Pulse Oximeter MicroPython Driver
+
+## Overview
+MicroPython driver for the MAX30100 pulse oximeter and heart-rate sensor. Provides comprehensive interface for reading heart rate, blood oxygen saturation (SpO2), and temperature data via I2C communication.
+
+## Features
+- **Dual LED Measurement**: Simultaneous red and infrared LED readings
+- **Heart Rate Monitoring**: Real-time heart rate calculation (BPM)
+- **Blood Oxygen Saturation**: SpO2 percentage measurement
+- **Temperature Sensing**: On-die temperature monitoring
+- **Configurable Sampling**: Adjustable sample rates (50-1000 Hz)
+- **LED Current Control**: Programmable LED intensity for different skin types
+
+## Hardware Requirements
+- MAX30100 Pulse Oximeter Sensor
+- ESP32 or compatible MicroPython board
+- I2C connections (SDA, SCL)
+- 3.3V power supply
+
+## Installation
+```python
+from max30100 import MAX30100
+```
+
+## Quick Start
+```python
+# Initialize sensor with default settings
+pulse_sensor = MAX30100(sda_pin=21, scl_pin=22)
+
+# Read comprehensive sensor data
+sensor_data = pulse_sensor.get_sensor_data()
+if sensor_data:
+    print(f"Heart Rate: {sensor_data['heart_rate']} BPM")
+    print(f"SpO2: {sensor_data['spo2']}%")
+    print(f"Temperature: {sensor_data['temperature']}°C")
+```
+
+## API Reference
+
+### Class: MAX30100
+
+#### Constructor
+```python
+MAX30100(i2c_bus=None, i2c_addr=0x57, sda_pin=21, scl_pin=22, fifo_samples=16, sample_rate=100)
+```
+- `i2c_bus`: Existing I2C bus object (optional)
+- `i2c_addr`: I2C address (default: 0x57)
+- `sda_pin`: SDA pin number (default: 21)
+- `scl_pin`: SCL pin number (default: 22)
+- `fifo_samples`: FIFO buffer size (default: 16)
+- `sample_rate`: Sampling rate in Hz (default: 100)
+
+#### Key Methods
+
+##### `get_sensor_data()`
+Reads all sensor data and calculates metrics.
+- **Returns**: Dictionary with:
+  - `heart_rate`: Calculated BPM
+  - `spo2`: Blood oxygen percentage
+  - `temperature`: Sensor temperature (°C)
+  - `ir_value`, `red_value`: Raw sensor readings
+  - `beat_detected`: Heart beat detection flag
+
+##### `read_sensor()`
+Reads raw data from sensor FIFO.
+- **Returns**: Tuple `(ir_value, red_value)`
+
+##### `set_sample_rate(sample_rate)`
+Configures sampling frequency.
+- `sample_rate`: 50, 100, 167, 200, 400, 600, 800, or 1000 Hz
+
+##### `set_led_current(ir_current, red_current)`
+Sets LED brightness levels.
+- Use `LED_CURRENT_*` constants (0-50mA range)
+
+##### `read_temperature()`
+Reads sensor die temperature.
+- **Returns**: Temperature in Celsius
+
+##### `calculate_heart_rate()`
+Calculates heart rate from IR data.
+- **Returns**: Heart rate in BPM
+
+##### `calculate_spo2()`
+Calculates blood oxygen saturation.
+- **Returns**: SpO2 percentage (70-100%)
+
+##### `get_sensor_info()`
+Returns sensor identification and configuration.
+- **Returns**: Dictionary with part ID, revision, and settings
+
+## Configuration Constants
+
+### Operation Modes
+- `MODE_HEART_RATE`: Heart rate only mode
+- `MODE_SPO2`: SpO2 + heart rate mode (default)
+
+### LED Current Settings
+Range from `LED_CURRENT_0MA` to `LED_CURRENT_50MA` in 15 steps for precise brightness control.
+
+## Usage Examples
+
+### Basic Health Monitoring
+```python
+pulse = MAX30100(sample_rate=100)
+pulse.set_led_current(pulse.LED_CURRENT_24MA, pulse.LED_CURRENT_24MA)
+
+while True:
+    data = pulse.get_sensor_data()
+    if data and data['beat_detected']:
+        print(f"HR: {data['heart_rate']:.1f} BPM, SpO2: {data['spo2']:.1f}%")
+    time.sleep(0.1)
+```
+
+### Custom Configuration
+```python
+# High-sensitivity configuration for low perfusion
+pulse = MAX30100(sample_rate=400)
+pulse.set_led_current(pulse.LED_CURRENT_50MA, pulse.LED_CURRENT_50MA)
+pulse.set_mode(pulse.MODE_SPO2)
+```
+
+## Technical Details
+
+### Sampling Rates
+Supported rates: 50, 100, 167, 200, 400, 600, 800, 1000 Hz
+- **Lower rates**: Better for battery-powered applications
+- **Higher rates**: Better for signal processing accuracy
+
+### LED Current Considerations
+- **Lower currents**: Better for battery life, fair skin
+- **Higher currents**: Better for dark skin, poor contact conditions
+- **Typical range**: 11-37mA for most applications
+
+### Signal Processing
+- Uses rolling buffer (32 samples) for calculations
+- Implements peak detection for heart rate
+- Uses ratio-of-ratios method for SpO2 calculation
+
+## Troubleshooting
+
+### Common Issues
+1. **No Sensor Detection**: Check I2C wiring and address (0x57)
+2. **Poor Readings**: Increase LED current or improve finger contact
+3. **Inconsistent Data**: Ensure stable power supply and proper grounding
+4. **High Noise**: Use lower sample rates or implement software filtering
+
+### Calibration Notes
+- SpO2 calculation requires individual calibration for accuracy
+- Heart rate algorithm benefits from user-specific tuning
+- Consider environmental factors (motion, ambient light)
+
+## Dependencies
+- `machine.I2C`
+- `machine.Pin`
+- `time`
+- `ustruct`
+
+## Applications
+- Wearable health monitors
+- Fitness tracking devices
+- Medical monitoring systems
+- Research and prototyping
+
+## License
+MicroPython Hardware Driver for MAX30100
