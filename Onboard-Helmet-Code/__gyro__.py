@@ -13,7 +13,7 @@ class GyroSetup:
     FF_DUR = 0x1E        # Free-Fall Duration register
     WHO_AM_I = 0x75      # Device identification register
     
-    def __init__(self, i2c_scl_pin=22, i2c_sda_pin=21, int_pin=4, i2c_bus=0):
+    def __init__(self, i2c_scl_pin, i2c_sda_pin, int_pin, i2c_bus=0):
         """
         Initialize GyroSetup with pin configuration
         
@@ -24,10 +24,11 @@ class GyroSetup:
             i2c_bus: I2C bus number (default: 0)
         """
         # Initialize I2C communication with MPU6050 sensor
-        self.i2c = I2C(i2c_bus, scl=Pin(i2c_scl_pin), sda=Pin(i2c_sda_pin), freq=400000)
+        self.i2c = I2C(i2c_bus, scl=i2c_scl_pin, sda=i2c_sda_pin, freq=400000)
         
         # Initialize interrupt pin as input with pull-up resistor
-        self.int_pin = Pin(int_pin, Pin.IN, Pin.PULL_UP)
+        self.int_pin = int_pin
+        self.int_pin.init(Pin.IN, Pin.pull_up)
         
         # State variables to track sensor status
         self.free_fall_detected = False  # Flag for free-fall detection

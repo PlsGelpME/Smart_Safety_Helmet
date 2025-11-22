@@ -1,409 +1,239 @@
-# max30100.py - MAX30100 Pulse Oximeter MicroPython Class
+# __pulse__.py - Simplified MAX30100 Pulse Oximeter Class
 from machine import I2C, Pin
 import time
-import ustruct
 
 class Pulse:
     """
-    MAX30100 Pulse Oximeter and Heart-Rate Sensor Class
-    Provides interface for reading heart rate and blood oxygen saturation (SpO2)
-    Uses I2C communication protocol
+    Simplified MAX30100 Pulse Oximeter Class
+    Provides essential heart rate and SpO2 monitoring
     """
     
-    # Register addresses [citation:5]
-    REG_INTR_STATUS_1 = 0x00    # Interrupt status register 1
-    REG_INTR_STATUS_2 = 0x01    # Interrupt status register 2
-    REG_INTR_ENABLE_1 = 0x02    # Interrupt enable register 1
-    REG_INTR_ENABLE_2 = 0x03    # Interrupt enable register 2
-    REG_FIFO_WR_PTR = 0x04      # FIFO write pointer
-    REG_OVF_COUNTER = 0x05      # FIFO overflow counter
-    REG_FIFO_RD_PTR = 0x06      # FIFO read pointer
-    REG_FIFO_DATA = 0x07        # FIFO data register (read sensor data here)
-    REG_FIFO_CONFIG = 0x08      # FIFO configuration register
-    REG_MODE_CONFIG = 0x09      # Operation mode configuration
-    REG_SPO2_CONFIG = 0x0A      # SpO2 configuration (sample rate, LED pulse width)
-    REG_LED1_PA = 0x0C          # LED1 (RED) pulse amplitude control
-    REG_LED2_PA = 0x0D          # LED2 (IR) pulse amplitude control
-    REG_PILOT_PA = 0x10         # Pilot LED pulse amplitude
-    REG_MULTI_LED_CTRL1 = 0x11  # Multi-LED mode control 1
-    REG_MULTI_LED_CTRL2 = 0x12  # Multi-LED mode control 2
-    REG_TEMP_INTR = 0x1F        # Temperature integer part
-    REG_TEMP_FRAC = 0x20        # Temperature fractional part
-    REG_TEMP_CONFIG = 0x21      # Temperature configuration
-    REG_PROX_INT_THRESH = 0x30  # Proximity interrupt threshold
-    REG_REV_ID = 0xFE           # Revision ID register
-    REG_PART_ID = 0xFF          # Part ID register (should read 0x11 for MAX30100)
+    # Essential register addresses
+    REG_INTR_STATUS_1 = 0x00
+    REG_INTR_ENABLE_1 = 0x02
+    REG_FIFO_WR_PTR = 0x04
+    REG_OVF_COUNTER = 0x05
+    REG_FIFO_RD_PTR = 0x06
+    REG_FIFO_DATA = 0x07
+    REG_FIFO_CONFIG = 0x08
+    REG_MODE_CONFIG = 0x09
+    REG_SPO2_CONFIG = 0x0A
+    REG_LED1_PA = 0x0C  # IR LED
+    REG_LED2_PA = 0x0D  # Red LED
+    REG_PART_ID = 0xFF
     
-    # Mode configurations [citation:1]
-    MODE_HEART_RATE = 0x02      # Heart rate only mode
-    MODE_SPO2 = 0x03            # SpO2 mode (heart rate + blood oxygen)
+    # Mode configurations
+    MODE_SPO2 = 0x03
     
-    # LED current settings [citation:5]
-    # Controls LED brightness for different skin types/conditions
-    LED_CURRENT_0MA = 0x00      # LED off
-    LED_CURRENT_4_4MA = 0x01    # 4.4mA LED current
-    LED_CURRENT_7_6MA = 0x02    # 7.6mA LED current
-    LED_CURRENT_11MA = 0x03     # 11mA LED current
-    LED_CURRENT_14_2MA = 0x04   # 14.2mA LED current
-    LED_CURRENT_17_4MA = 0x05   # 17.4mA LED current
-    LED_CURRENT_20_8MA = 0x06   # 20.8mA LED current
-    LED_CURRENT_24MA = 0x07     # 24mA LED current
-    LED_CURRENT_27_1MA = 0x08   # 27.1mA LED current
-    LED_CURRENT_30_6MA = 0x09   # 30.6mA LED current
-    LED_CURRENT_33_8MA = 0x0A   # 33.8mA LED current
-    LED_CURRENT_37MA = 0x0B     # 37mA LED current
-    LED_CURRENT_40_2MA = 0x0C   # 40.2mA LED current
-    LED_CURRENT_43_6MA = 0x0D   # 43.6mA LED current
-    LED_CURRENT_46_8MA = 0x0E   # 46.8mA LED current
-    LED_CURRENT_50MA = 0x0F     # 50mA LED current (maximum)
+    # LED current settings
+    LED_CURRENT_24MA = 0x06
+    LED_CURRENT_27MA = 0x08
+    LED_CURRENT_50MA = 0x0F
     
-    def __init__(self, i2c_bus=None, i2c_addr=0x57, sda_pin=21, scl_pin=22, 
-                 fifo_samples=16, sample_rate=100):
+    def __init__(self, sda_pin=21, scl_pin=22, i2c_addr=0x57, sample_rate=100):
         """
-        Initialize MAX30100 pulse oximeter [citation:1][citation:5]
+        Initialize pulse oximeter
         
         Args:
-            i2c_bus: I2C bus object (if None, creates new bus)
-            i2c_addr: I2C address of MAX30100 (typically 0x57)
-            sda_pin: SDA pin number for I2C communication
-            scl_pin: SCL pin number for I2C communication
-            fifo_samples: Number of samples in FIFO buffer (1-32)
-            sample_rate: Sampling rate in Hz (50, 100, 167, 200, 400, 600, 800, 1000)
+            sda_pin: I2C SDA pin
+            scl_pin: I2C SCL pin  
+            i2c_addr: I2C address
+            sample_rate: Sampling rate in Hz
         """
         self.i2c_addr = i2c_addr
-          
-        # Initialize I2C bus [citation:3]
-        if i2c_bus is None:
-            # Create new I2C bus with specified pins and 400kHz frequency
-            self.i2c = I2C(0, sda=Pin(sda_pin), scl=Pin(scl_pin), freq=400000)
-        else:
-            # Use provided I2C bus
-            self.i2c = i2c_bus
         
-        # Sensor data buffers [citation:1]
-        self.ir_buffer = []     # Infrared LED readings buffer
-        self.red_buffer = []    # Red LED readings buffer
-        self.buffer_size = 32   # Maximum buffer size for signal processing
+        # Initialize I2C
+        self.i2c = I2C(0, sda=Pin(sda_pin), scl=Pin(scl_pin), freq=400000)
         
-        # Configuration parameters
-        self.sample_rate = sample_rate      # Samples per second
-        self.led_current_ir = self.LED_CURRENT_50MA   # IR LED current (50mA max)
-        self.led_current_red = self.LED_CURRENT_50MA  # Red LED current (50mA max)
-        self.mode = self.MODE_SPO2          # Default to SpO2 + heart rate mode
+        # Data buffers
+        self.ir_buffer = []
+        self.red_buffer = []
+        self.buffer_size = 32
         
-        # Data processing variables
-        self.last_heart_rate = 0    # Last calculated heart rate (BPM)
-        self.last_spo2 = 0          # Last calculated blood oxygen saturation (%)
-        self.beat_detected = False  # Flag indicating heart beat detection
+        # Configuration
+        self.sample_rate = sample_rate
+        self.led_current = self.LED_CURRENT_27MA
         
-        # Initialize sensor hardware
+        # Initialize sensor
         self._initialize_sensor()
         
-        print("MAX30100 pulse oximeter initialized")
+        print("Pulse oximeter initialized")
     
     def _write_register(self, reg, value):
-        """
-        Write value to sensor register
-        
-        Args:
-            reg: Register address to write to
-            value: Value to write (0-255)
-            
-        Returns:
-            bool: True if write successful, False if I2C error
-        """
+        """Write to sensor register"""
         try:
             self.i2c.writeto_mem(self.i2c_addr, reg, bytes([value]))
             return True
-        except OSError:
-            print(f"I2C write error to register 0x{reg:02x}")
+        except:
             return False
     
     def _read_register(self, reg, length=1):
-        """
-        Read value from sensor register
-        
-        Args:
-            reg: Register address to read from
-            length: Number of bytes to read
-            
-        Returns:
-            bytes: Register value(s) or None if I2C error
-        """
+        """Read from sensor register"""
         try:
             return self.i2c.readfrom_mem(self.i2c_addr, reg, length)
-        except OSError:
-            print(f"I2C read error from register 0x{reg:02x}")
+        except:
             return None
     
     def _initialize_sensor(self):
-        """
-        Initialize sensor with default configuration [citation:5]
-        Sets up FIFO, sample rate, LED currents, and operation mode
-        
-        Returns:
-            bool: True if initialization successful, False if sensor not found
-        """
-        # Reset sensor to default state
+        """Initialize sensor with basic configuration"""
+        # Reset sensor
         self._write_register(self.REG_MODE_CONFIG, 0x40)
-        time.sleep(0.1)  # Wait for reset to complete
+        time.sleep(0.1)
         
-        # Check if sensor is present by reading part ID [citation:3]
+        # Verify sensor
         part_id = self._read_register(self.REG_PART_ID)
-        if part_id is None or part_id[0] != 0x11:  # MAX30100 part ID should be 0x11
-            print("MAX30100 not found. Check wiring.")
+        if part_id is None or part_id[0] != 0x11:
+            print("MAX30100 not found")
             return False
         
-        # Set FIFO configuration [citation:1]
-        # Average 4 samples, rollover enabled (continue when full)
-        fifo_config = 0x40 | (0x3 << 5)  # Sample average = 4, rollover enabled
-        self._write_register(self.REG_FIFO_CONFIG, fifo_config)
+        # Configure FIFO
+        self._write_register(self.REG_FIFO_CONFIG, 0x40)  # Rollover enabled
         
-        # Set mode configuration [citation:5]
-        self.set_mode(self.MODE_SPO2)
+        # Set mode
+        self._write_register(self.REG_MODE_CONFIG, self.MODE_SPO2)
         
-        # Set SpO2 configuration (sample rate)
-        self.set_sample_rate(self.sample_rate)
+        # Set LED currents
+        self._write_register(self.REG_LED1_PA, self.led_current)  # IR LED
+        self._write_register(self.REG_LED2_PA, self.led_current)  # Red LED
         
-        # Set LED currents [citation:5]
-        self.set_led_current(self.led_current_ir, self.led_current_red)
-        
-        # Clear FIFO buffers
-        self._write_register(self.REG_FIFO_WR_PTR, 0x00)   # Reset write pointer
-        self._write_register(self.REG_OVF_COUNTER, 0x00)   # Clear overflow counter
-        self._write_register(self.REG_FIFO_RD_PTR, 0x00)   # Reset read pointer
+        # Clear FIFO
+        self._write_register(self.REG_FIFO_WR_PTR, 0x00)
+        self._write_register(self.REG_OVF_COUNTER, 0x00)
+        self._write_register(self.REG_FIFO_RD_PTR, 0x00)
         
         return True
     
-    def set_mode(self, mode):
-        """
-        Set operating mode [citation:1]
-        
-        Args:
-            mode: Operation mode (MODE_HEART_RATE or MODE_SPO2)
-        """
-        self.mode = mode
-        self._write_register(self.REG_MODE_CONFIG, mode)
-    
-    def set_sample_rate(self, sample_rate):
-        """
-        Set sampling rate [citation:1]
-        
-        Args:
-            sample_rate: Sampling rate in Hz (50, 100, 167, 200, 400, 600, 800, 1000)
-        """
-        self.sample_rate = sample_rate
-        
-        # Map sample rate to register value [citation:5]
-        rate_codes = {
-            50: 0x00, 100: 0x01, 167: 0x02, 200: 0x03, 
-            400: 0x04, 600: 0x05, 800: 0x06, 1000: 0x07
-        }
-        
-        if sample_rate in rate_codes:
-            # Read current SpO2 configuration
-            spo2_config = self._read_register(self.REG_SPO2_CONFIG)
-            if spo2_config:
-                # Preserve existing bits and set new sample rate
-                new_config = (spo2_config[0] & 0xE3) | (rate_codes[sample_rate] << 2)
-                self._write_register(self.REG_SPO2_CONFIG, new_config)
-    
-    def set_led_current(self, ir_current, red_current):
-        """
-        Set LED currents [citation:5]
-        Higher currents work better for darker skin or poor contact
-        
-        Args:
-            ir_current: IR LED current (use LED_CURRENT_* constants)
-            red_current: Red LED current (use LED_CURRENT_* constants)
-        """
-        self.led_current_ir = ir_current
-        self.led_current_red = red_current
-        
-        # Write LED current settings to registers
-        self._write_register(self.REG_LED1_PA, ir_current)   # IR LED
-        self._write_register(self.REG_LED2_PA, red_current)  # Red LED
-    
     def read_sensor(self):
         """
-        Read data from sensor FIFO [citation:1]
-        Reads one sample pair (IR and Red) from the FIFO buffer
+        Read raw sensor data from FIFO
         
         Returns:
-            tuple: (ir_value, red_value) or (None, None) if no data or error
+            tuple: (ir_value, red_value) or (None, None) if error
         """
         try:
-            # Read FIFO data (4 bytes: IR high, IR low, RED high, RED low)
+            # Read 4 bytes from FIFO
             fifo_data = self._read_register(self.REG_FIFO_DATA, 4)
             if fifo_data is None or len(fifo_data) != 4:
                 return None, None
             
-            # Convert bytes to 16-bit values [citation:1]
-            ir_value = (fifo_data[0] << 8) | fifo_data[1]   # Combine high and low bytes
-            red_value = (fifo_data[2] << 8) | fifo_data[3]  # Combine high and low bytes
+            # Convert to 16-bit values
+            ir_value = (fifo_data[0] << 8) | fifo_data[1]
+            red_value = (fifo_data[2] << 8) | fifo_data[3]
             
-            # Update buffers for signal processing
+            # Update buffers
             self._update_buffers(ir_value, red_value)
             
             return ir_value, red_value
             
-        except Exception as e:
-            print(f"Error reading sensor: {e}")
+        except:
             return None, None
     
     def _update_buffers(self, ir_value, red_value):
-        """
-        Update data buffers with new readings
-        Maintains rolling buffer for signal processing algorithms
-        
-        Args:
-            ir_value: New IR sensor reading
-            red_value: New Red sensor reading
-        """
+        """Update data buffers with new readings"""
         self.ir_buffer.append(ir_value)
         self.red_buffer.append(red_value)
         
-        # Maintain buffer size by removing oldest values
+        # Maintain buffer size
         if len(self.ir_buffer) > self.buffer_size:
             self.ir_buffer.pop(0)
             self.red_buffer.pop(0)
     
-    def read_temperature(self):
-        """
-        Read die temperature from sensor
-        
-        Returns:
-            float: Temperature in Celsius or None if error
-        """
-        # Trigger temperature reading
-        self._write_register(self.REG_TEMP_CONFIG, 0x01)
-        
-        # Wait for temperature conversion to complete
-        time.sleep(0.1)
-        
-        # Read temperature data
-        temp_int = self._read_register(self.REG_TEMP_INTR)   # Integer part
-        temp_frac = self._read_register(self.REG_TEMP_FRAC)  # Fractional part
-        
-        if temp_int is None or temp_frac is None:
-            return None
-        
-        # Calculate temperature (integer part + fractional part)
-        temperature = temp_int[0] + (temp_frac[0] * 0.0625)  # Each LSB = 0.0625°C
-        return temperature
-    
     def calculate_heart_rate(self):
         """
-        Basic heart rate calculation from IR data [citation:2][citation:4]
-        Uses simple peak detection algorithm on IR signal
-        Note: This is a simplified implementation - consider more advanced algorithms for production
+        Calculate heart rate from IR data using peak detection
         
         Returns:
-            float: Heart rate in beats per minute (BPM)
+            float: Heart rate in BPM
         """
         if len(self.ir_buffer) < 10:
-            return 0  # Not enough data for calculation
+            return 0
         
-        # Simple peak detection algorithm
-        threshold = sum(self.ir_buffer) / len(self.ir_buffer)  # Dynamic threshold
+        # Simple peak detection
+        threshold = sum(self.ir_buffer) / len(self.ir_buffer)
         peaks = 0
         
-        # Find peaks in IR signal (local maxima above threshold)
         for i in range(1, len(self.ir_buffer) - 1):
-            if (self.ir_buffer[i] > self.ir_buffer[i-1] and     # Higher than previous
-                self.ir_buffer[i] > self.ir_buffer[i+1] and     # Higher than next
-                self.ir_buffer[i] > threshold * 1.1):           # Above noise threshold
+            if (self.ir_buffer[i] > self.ir_buffer[i-1] and
+                self.ir_buffer[i] > self.ir_buffer[i+1] and
+                self.ir_buffer[i] > threshold * 1.1):
                 peaks += 1
         
-        # Calculate BPM based on peaks in buffer
+        # Calculate BPM
         if peaks > 1:
-            time_window = len(self.ir_buffer) / self.sample_rate  # Buffer duration in seconds
-            bpm = (peaks - 1) * (60.0 / time_window)  # Convert to beats per minute
-            self.last_heart_rate = bpm
-            self.beat_detected = True
-        else:
-            self.beat_detected = False
+            time_window = len(self.ir_buffer) / self.sample_rate
+            bpm = (peaks - 1) * (60.0 / time_window)
+            return max(40, min(180, bpm))  # Clamp to reasonable range
         
-        return self.last_heart_rate
+        return 0
     
     def calculate_spo2(self):
         """
-        Basic SpO2 calculation from red and IR ratios [citation:2]
-        Uses ratio-of-ratios method (AC/DC components)
-        Note: This requires proper calibration for accurate results
+        Calculate blood oxygen saturation
         
         Returns:
-            float: Blood oxygen saturation percentage (0-100%)
+            float: SpO2 percentage
         """
         if len(self.red_buffer) < 10 or len(self.ir_buffer) < 10:
-            return 0  # Not enough data for calculation
+            return 0
         
-        # Calculate AC components (pulsatile, varies with heartbeat)
-        red_ac = max(self.red_buffer) - min(self.red_buffer)   # Red AC component
-        ir_ac = max(self.ir_buffer) - min(self.ir_buffer)      # IR AC component
+        # Calculate AC and DC components
+        red_ac = max(self.red_buffer) - min(self.red_buffer)
+        ir_ac = max(self.ir_buffer) - min(self.ir_buffer)
         
-        # Calculate DC components (non-pulsatile, baseline)
-        red_dc = sum(self.red_buffer) / len(self.red_buffer)   # Red DC component
-        ir_dc = sum(self.ir_buffer) / len(self.ir_buffer)      # IR DC component
+        red_dc = sum(self.red_buffer) / len(self.red_buffer)
+        ir_dc = sum(self.ir_buffer) / len(self.ir_buffer)
         
         if red_dc == 0 or ir_dc == 0:
-            return 0  # Avoid division by zero
+            return 0
         
-        # Calculate ratio of ratios (R-value) [citation:2]
+        # Calculate ratio and SpO2
         ratio = (red_ac / red_dc) / (ir_ac / ir_dc)
-        
-        # Empirical formula for SpO2 (requires calibration) [citation:2]
         spo2 = 110 - (25 * ratio)
-        spo2 = max(70, min(100, spo2))  # Clamp to reasonable range (70-100%)
         
-        self.last_spo2 = spo2
-        return spo2
+        # Clamp to reasonable range
+        return max(70, min(100, spo2))
     
     def get_sensor_data(self):
         """
         Get comprehensive sensor data
-        Reads current sensor values and calculates all metrics
         
         Returns:
-            dict: Sensor readings and calculated values or None if error
+            dict: Sensor readings and calculated values
         """
-        # Read raw sensor data
         ir, red = self.read_sensor()
         
         if ir is None or red is None:
-            return None  # No data available
+            return None
         
-        # Calculate derived metrics
         heart_rate = self.calculate_heart_rate()
         spo2 = self.calculate_spo2()
-        temperature = self.read_temperature()
         
         return {
-            'ir_value': ir,                 # Raw IR sensor reading
-            'red_value': red,               # Raw Red sensor reading
-            'heart_rate': heart_rate,       # Calculated heart rate (BPM)
-            'spo2': spo2,                   # Calculated blood oxygen (%)
-            'temperature': temperature,     # Sensor temperature (°C)
-            'beat_detected': self.beat_detected,  # Heart beat detection flag
-            'timestamp': time.time()        # Measurement timestamp
+            'ir_value': ir,
+            'red_value': red,
+            'heart_rate': heart_rate,
+            'spo2': spo2,
+            'timestamp': time.time()
         }
     
-    def get_sensor_info(self):
+    def set_led_current(self, current):
         """
-        Get sensor information and current configuration
+        Set LED current for both IR and Red LEDs
         
-        Returns:
-            dict: Sensor identification and configuration details
+        Args:
+            current: LED current value (use LED_CURRENT_* constants)
         """
-        part_id = self._read_register(self.REG_PART_ID)
-        rev_id = self._read_register(self.REG_REV_ID)
-        
-        return {
-            'part_id': part_id[0] if part_id else None,        # Should be 0x11
-            'revision_id': rev_id[0] if rev_id else None,      # Chip revision
-            'mode': self.mode,                                 # Current operation mode
-            'sample_rate': self.sample_rate,                   # Samples per second
-            'led_current_ir': self.led_current_ir,             # IR LED current setting
-            'led_current_red': self.led_current_red,           # Red LED current setting
-            'buffer_size': len(self.ir_buffer)                 # Current data buffer size
-        }
+        self.led_current = current
+        self._write_register(self.REG_LED1_PA, current)  # IR LED
+        self._write_register(self.REG_LED2_PA, current)  # Red LED
+
+# Simple usage example
+if __name__ == "__main__":
+    pulse = Pulse(sda_pin=21, scl_pin=22)
+    
+    print("Testing pulse oximeter...")
+    for i in range(50):
+        data = pulse.get_sensor_data()
+        if data:
+            print(f"HR: {data['heart_rate']:.1f} BPM, SpO2: {data['spo2']:.1f}%")
+        time.sleep(0.1)
