@@ -30,6 +30,9 @@ emergency_active = False   # Global emergency state flag
 # Buzzer control initialization for emergency alerts
 if 'buzzer' in globals():
     b = 0 # flag for buzzer
+    
+if 'gas' in globals():
+    toxic_gas = False
 
 # Function declarations for interrupt handlers and emergency procedures
 def free_fall_handler(pin):
@@ -43,12 +46,6 @@ def impact_handler(pin):
     global impact, emergency_active
     impact = True              # Set impact flag
     emergency_active = True    # Activate global emergency state
-
-def activate_buzzer():
-    """Activate buzzer and keep it on until system power off"""
-    if 'buzzer' in globals():
-        buzzer.value(1)  # Turn buzzer ON (continuous alert)
-        print("BUZZER ACTIVATED - Requires manual power cycle to reset")
 
 def send_emergency_data():
     """Send comprehensive emergency data including GPS and pulse readings"""
@@ -90,9 +87,6 @@ def send_emergency_data():
         temperature = temp.getTemp(unit=1)  # Get temperature in Celsius
         message_sender.publish_temperature(temperature)
     
-    # 5. Activate buzzer (non-stop until power off for attention)
-    activate_buzzer()
-    
     print("EMERGENCY PROTOCOL COMPLETE - System requires manual reset")
 
 # Setup interrupt handlers for emergency detection
@@ -126,7 +120,11 @@ while True:
     else:
         b = 0
         buzzer.stop()
-        
+    
+    if toxic_gas:
+        emergency_active = True
+        toxic_gas = False
+    
     # Handle emergency events (highest priority - non-resettable)
     if emergency_active:
         if not 'emergency_handled' in globals():
@@ -134,14 +132,18 @@ while True:
             send_emergency_data()
             global emergency_handled
             emergency_handled = True  # Mark emergency as handled
-        
-        buzzer.faint_alert()
+
         # Send periodic emergency updates while system is active
         if current_time - last_status_update >= 30:  # Every 30 seconds during emergency
             if free_fall:
                 emergency_msg = "FAINT"    # Free-fall likely indicates fainting
+                buzzer.faint_alert()
+            elif gas:
+                emergency_msg = "TOXIC_GAS"
+                buzzer.gas_alert()
             else:
-                emergency_msg = "IMPACT"   # Impact indicates collision/fall
+                emergency_msg = "IMPACT"    # Impact indicates collision/fall
+                buzzer.faint_alert()
                 
             message_sender.publish_status("emergency_active", emergency_msg)
             last_status_update = current_time
@@ -165,7 +167,10 @@ while True:
                 if reading:
                     message_sender.publish_gas(reading['value'], reading['status'])
                     last_gas_read = current_time  # Update last read timestamp
-        
+                
+                if reading['status'] == 'WARNING' or reading['status'] == 'ALARM':
+                    toxic_gas = True
+                
         # Periodic temperature reading with alert checking
         if 'temp' in globals() and (current_time - last_temp_read >= TEMP_READ_INTERVAL):
             print("Reading temperature...")
