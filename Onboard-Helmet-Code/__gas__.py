@@ -68,7 +68,7 @@ class Gas:
         else:
             return "NORMAL"  # Safe gas concentration levels
     
-    def set_thresholds(self, warning, alarm):
+    def set_threshold(self, warning, alarm):
         """
         Update gas concentration thresholds for status determination
         Allows dynamic adjustment of sensitivity levels

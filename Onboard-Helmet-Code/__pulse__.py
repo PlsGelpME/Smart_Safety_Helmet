@@ -71,7 +71,7 @@ class MAX30100:
             sample_rate: Sampling rate in Hz (50, 100, 167, 200, 400, 600, 800, 1000)
         """
         self.i2c_addr = i2c_addr
-        
+          
         # Initialize I2C bus [citation:3]
         if i2c_bus is None:
             # Create new I2C bus with specified pins and 400kHz frequency
