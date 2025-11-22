@@ -23,13 +23,13 @@ temp_pin  = ADC(36) # Analog Pin for temperature sensor - Can't use 25,26,27 as 
 gas_pin   = ADC(39) # Analog pin for gas sensor reading
 gas_pwr   = Pin(13) # Digital pin to control gas sensor power
 gps_pwr   = Pin(14) # Digital pin to control GPS module power
-gps_rx    = 3 # UART RX pin for GPS data reception
-gps_tx    = 1 # UART TX pin for GPS data transmission
-gyro_sda  = Pin(21) # I2C SDA pin for gyroscope (I2C channel 1)
-gyro_scl  = Pin(22) # I2C SCL pin for gyroscope (I2C channel 1)
+gps_rx    = 3       # UART RX pin for GPS data reception
+gps_tx    = 1       # UART TX pin for GPS data transmission
+gyro_sda  = 21      # I2C SDA pin for gyroscope (I2C channel 1)
+gyro_scl  = 22      # I2C SCL pin for gyroscope (I2C channel 1)
 gyro_int  = Pin(19) # Interrupt pin from gyroscope for free-fall detection
-pulse_sda = Pin(21) # I2C SDA pin for pulse oximeter (I2C channel 2)
-pulse_scl = Pin(22) # I2C SCL pin for pulse oximeter (I2C channel 2)
+pulse_sda = 21      # I2C SDA pin for pulse oximeter (I2C channel 2)
+pulse_scl = 22      # I2C SCL pin for pulse oximeter (I2C channel 2)
 frc_pin   = Pin(32) # Digital input pin for force sensor
 belt_int  = Pin(33) # Digital input pin for belt interrupt/safety switch
 buzz_pin  = Pin(23) # Digital output pin for buzzer control
@@ -58,9 +58,8 @@ gps = __GPS__(
 
 # Initialize gas sensor with optional power control for power management
 gas_sensor = GasSensor(
-    gas_adc_pin = gas_pin,    # ADC pin for reading gas sensor analog value
+    analog_pin = gas_pin,    # ADC pin for reading gas sensor analog value
     power_pin = gas_pwr,      # GPIO pin to control sensor power (optional power saving)
-    sensor_type = "MQ2"       # Type of gas sensor (MQ2 for flammable gases)
 )
 
 # Set appropriate gas concentration thresholds for warning and alarm levels
