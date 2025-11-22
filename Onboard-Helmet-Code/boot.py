@@ -4,6 +4,7 @@ from machine import *
 from __gyro__ import GyroSetup
 from __GPS__ import GPS
 from __pulse__ import Pulse
+from __buzzer__ import Buzzer
 
 # Turn off vendor OS debugging messages to reduce serial output noise
 esp.osdebug(None)
@@ -67,11 +68,17 @@ gas_sensor.set_threshold(warning=1500, alarm=2500)  # ADC values for warning and
 
 # Initialize Temperature module with NTC thermistor
 temp  = Temp(pin = temp_pin,      # ADC pin for temperature sensor
-             normal_temp = 36)    # Normal body temperature threshold in Celsius
+             normal_temp = 36     # Normal body temperature threshold in Celsius
+)    
 
 # Initialize Pulse Oximeter sensor via I2C communication
 pulse = Pulse(
     sda_pin = pulse_sda,      # I2C SDA pin for pulse oximeter
     scl_pin = pulse_scl,      # I2C SCL pin for pulse oximeter  
     sample_rate = 100         # 100Hz sampling rate for heart rate and SpO2 measurement
+)
+
+# Initialize Buzzer to create various tones
+buzzer = Buzzer(
+    pin = buzz_pin           #Digital Output Pin for PWM
 )
