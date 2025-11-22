@@ -1,5 +1,5 @@
 # mqtt_setup.py - MQTT connection setup and basic sender
-from umqtt.simple import MQTTClient
+from umqttsimple import MQTTClient
 import ubinascii
 import machine
 import time
