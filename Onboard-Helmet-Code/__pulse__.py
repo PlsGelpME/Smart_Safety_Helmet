@@ -3,7 +3,7 @@ from machine import I2C, Pin
 import time
 import ustruct
 
-class MAX30100:
+class Pulse:
     """
     MAX30100 Pulse Oximeter and Heart-Rate Sensor Class
     Provides interface for reading heart rate and blood oxygen saturation (SpO2)

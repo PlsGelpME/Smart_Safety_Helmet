@@ -1,10 +1,12 @@
 import gc
 import esp
 from machine import *
+from __gas__ import Gas
 from __gyro__ import GyroSetup
 from __GPS__ import GPS
 from __pulse__ import Pulse
 from __buzzer__ import Buzzer
+from __temp__ import Temp
 
 # Turn off vendor OS debugging messages to reduce serial output noise
 esp.osdebug(None)
@@ -49,7 +51,7 @@ gyro = GyroSetup(
 gyro.configure_freefall(threshold=0x10, duration=0x05) # threshold = 0.16g force and 5 ms duration
 
 # Initialize GPS module - it starts powered OFF for power saving
-gps = __GPS__(
+gps = GPS(
     power_pin = gps_pwr,    # GPIO pin controlling GPS power (enable/disable)
     rx_pin = gps_rx,        # GPS TX -> ESP32 RX (data reception from GPS)
     tx_pin = gps_tx,        # ESP32 TX -> GPS RX (optional, for GPS configuration)
@@ -57,7 +59,7 @@ gps = __GPS__(
 )
 
 # Initialize gas sensor with optional power control for power management
-gas_sensor = GasSensor(
+gas_sensor = Gas(
     analog_pin = gas_pin,    # ADC pin for reading gas sensor analog value
     power_pin = gas_pwr,      # GPIO pin to control sensor power (optional power saving)
 )
