@@ -19,20 +19,20 @@ gc.enable()
 Pin declarations for all sensors and peripherals
 Enter pin numbers here according to your ESP32 wiring configuration
 """
-temp_pin  = ADC(0) # Analog Pin for temperature sensor - Can't use 25,26,27 as we are using WiFi. Read MicroPython ADC documentation.
-gas_pin   = ADC(0) # Analog pin for gas sensor reading
-gas_pwr   = Pin(0) # Digital pin to control gas sensor power
-gps_pwr   = Pin(0) # Digital pin to control GPS module power
-gps_rx    = Pin(0) # UART RX pin for GPS data reception
-gps_tx    = Pin(0) # UART TX pin for GPS data transmission
-gyro_sda  = Pin(0) # I2C SDA pin for gyroscope (I2C channel 1)
-gyro_scl  = Pin(0) # I2C SCL pin for gyroscope (I2C channel 1)
-gyro_int  = Pin(0) # Interrupt pin from gyroscope for free-fall detection
-pulse_sda = Pin(0) # I2C SDA pin for pulse oximeter (I2C channel 2)
-pulse_scl = Pin(0) # I2C SCL pin for pulse oximeter (I2C channel 2)
-frc_pin   = Pin(0) # Digital input pin for force sensor
-belt_int  = Pin(0) # Digital input pin for belt interrupt/safety switch
-buzz_pin  = Pin(0) # Digital output pin for buzzer control
+temp_pin  = ADC(36) # Analog Pin for temperature sensor - Can't use 25,26,27 as we are using WiFi. Read MicroPython ADC documentation.
+gas_pin   = ADC(39) # Analog pin for gas sensor reading
+gas_pwr   = Pin(13) # Digital pin to control gas sensor power
+gps_pwr   = Pin(14) # Digital pin to control GPS module power
+gps_rx    = 3 # UART RX pin for GPS data reception
+gps_tx    = 1 # UART TX pin for GPS data transmission
+gyro_sda  = Pin(21) # I2C SDA pin for gyroscope (I2C channel 1)
+gyro_scl  = Pin(22) # I2C SCL pin for gyroscope (I2C channel 1)
+gyro_int  = Pin(19) # Interrupt pin from gyroscope for free-fall detection
+pulse_sda = Pin(21) # I2C SDA pin for pulse oximeter (I2C channel 2)
+pulse_scl = Pin(22) # I2C SCL pin for pulse oximeter (I2C channel 2)
+frc_pin   = Pin(32) # Digital input pin for force sensor
+belt_int  = Pin(33) # Digital input pin for belt interrupt/safety switch
+buzz_pin  = Pin(23) # Digital output pin for buzzer control
 
 # Configure ADC attenuation for full 0-3.3V range reading
 temp_pin.atten(ADC.ATTN_11DB)  # 11dB attenuation allows 0-3.3V range
