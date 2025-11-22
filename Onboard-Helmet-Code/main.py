@@ -28,9 +28,8 @@ impact = False             # Flag for impact detection from force sensor
 emergency_active = False   # Global emergency state flag
 
 # Buzzer control initialization for emergency alerts
-if 'buzz_pin' in globals():
-    buzzer = Pin(buzz_pin, Pin.OUT)  # Initialize buzzer as output pin
-    buzzer.value(0)  # Start with buzzer off (active low/high depending on hardware)
+if 'buzzer' in globals():
+    b = 0 # flag for buzzer
 
 # Function declarations for interrupt handlers and emergency procedures
 def free_fall_handler(pin):
@@ -106,10 +105,10 @@ if 'frc_pin' in globals():
     frc_pin.irq(trigger=Pin.IRQ_FALLING, handler=impact_handler)
 
 # Timing variables for sensor reading intervals
-last_gps_read = 0        # Last GPS reading timestamp
-last_gas_read = 0        # Last gas sensor reading timestamp  
-last_temp_read = 0       # Last temperature reading timestamp
-last_pulse_read = 0      # Last pulse oximeter reading timestamp
+last_gps_read      = 0   # Last GPS reading timestamp
+last_gas_read      = 0   # Last gas sensor reading timestamp  
+last_temp_read     = 0   # Last temperature reading timestamp
+last_pulse_read    = 0   # Last pulse oximeter reading timestamp
 last_status_update = 0   # Last status update timestamp
 
 print("System initialized. Starting main loop...")
@@ -118,6 +117,16 @@ print("System initialized. Starting main loop...")
 while True:
     current_time = time.time()  # Get current time for interval checking
     
+    while belt_int.value() == 0:
+        if b == 0:
+            buzzer.helmet_alert()
+            b = 1
+        
+        time.sleep(1)
+    else:
+        b = 0
+        buzzer.stop()
+        
     # Handle emergency events (highest priority - non-resettable)
     if emergency_active:
         if not 'emergency_handled' in globals():
@@ -125,11 +134,8 @@ while True:
             send_emergency_data()
             global emergency_handled
             emergency_handled = True  # Mark emergency as handled
-            
-        # Continue buzzing and periodic emergency updates
-        if 'buzzer' in globals():
-            buzzer.value(1)  # Ensure buzzer stays on continuously
-            
+        
+        buzzer.faint_alert()
         # Send periodic emergency updates while system is active
         if current_time - last_status_update >= 30:  # Every 30 seconds during emergency
             if free_fall:
