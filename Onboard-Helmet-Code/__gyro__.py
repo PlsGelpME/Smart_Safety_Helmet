@@ -28,7 +28,7 @@ class GyroSetup:
         
         # Initialize interrupt pin as input with pull-up resistor
         self.int_pin = int_pin
-        self.int_pin.init(Pin.IN, Pin.pull_up)
+        self.int_pin.init(Pin.IN, Pin.PULL_UP)
         
         # State variables to track sensor status
         self.free_fall_detected = False  # Flag for free-fall detection
