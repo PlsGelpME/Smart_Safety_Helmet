@@ -129,3 +129,5 @@ class Gas:
             # Critical for power management in battery-operated devices
             self.power_pin.value(0)
             print("MQ2 powered off")
+            
+    
