@@ -1,12 +1,22 @@
-from machine import *
+from machine import Pin, ADC
 import time
+import network
 from mqtt_setup import MQTTSetup
+from wifi_connection import WiFiManager
 from message_creator import MessageCreator
+from ppl_boot import boot
+
+#Constants for WiFi setup
+ssid = "OnePlus 9R"
+password = "kesav115"
 
 # Constants for MQTT broker configuration
-server_ip = "192.168.1.100"  # Replace with your MQTT broker IP address
-username = None              # Set if your broker requires authentication
-password = None              # Set if your broker requires authentication
+server_ip = "10.47.198.63"  # Replace with your MQTT broker IP address
+username = None             # Set if your broker requires authentication
+password = None             # Set if your broker requires authentication
+
+#unpacking global objects from ppl_boot
+gyro, gas_sensor, temp, pulse, buzzer, frc_pin = boot().unpack_globals()
 
 # Sensor reading intervals in seconds for power management
 GPS_READ_INTERVAL      = 300      # 5 minutes - GPS consumes high power
@@ -14,6 +24,13 @@ GAS_READ_INTERVAL      = 3600     # 1 hour - Gas sensor typically stable
 TEMP_READ_INTERVAL     = 300      # 5 minutes - Temperature monitoring
 PULSE_READ_INTERVAL    = 60       # 1 minute - Frequent health monitoring
 STATUS_UPDATE_INTERVAL = 60       # 1 minute - Regular status updates
+
+#Connecting to wifi - Mobile hotspot
+wifi = WiFiManager(ssid,password)
+wifi.connect()
+ip = wifi.getIP()
+print(ip)
+
 
 # Initialize MQTT communication system
 mqtt_setup = MQTTSetup(server=server_ip, username=username, password=password)
@@ -25,14 +42,9 @@ message_sender = MessageCreator(sender_function=sender_function)
 # Global emergency flags - NOT reset automatically (requires power cycle)
 free_fall = False          # Flag for free-fall detection from gyroscope
 impact = False             # Flag for impact detection from force sensor
+b = False
+toxic_gas = False
 emergency_active = False   # Global emergency state flag
-
-# Buzzer control initialization for emergency alerts
-if 'buzzer' in globals():
-    b = 0 # flag for buzzer
-    
-if 'gas' in globals():
-    toxic_gas = False
 
 # Function declarations for interrupt handlers and emergency procedures
 def free_fall_handler(pin):
@@ -60,6 +72,7 @@ def send_emergency_data():
     message_sender.publish_status("emergency", f"{emergency_type} detected")
     
     # 2. Get and send GPS location with extended timeout for reliability
+    '''
     gps_data_sent = False
     if 'gps' in globals():
         location = gps.get_position(timeout=20)  # Longer timeout for emergency situation
@@ -67,36 +80,34 @@ def send_emergency_data():
             message_sender.publish_gps(location['latitude'], location['longitude'], location['altitude'])
             gps_data_sent = True
             print("Emergency GPS location sent")
-    
+    '''
+
     # 3. Get and send pulse oximeter data for health status
     pulse_data_sent = False
-    if 'pulse' in globals():
-        pulse_data = pulse.get_sensor_data()
-        if pulse_data:
-            message_sender.publish_pulse(pulse_data['heart_rate'], pulse_data['spo2'])
-            pulse_data_sent = True
-            print("Emergency pulse data sent")
+    pulse_data = pulse.get_sensor_data()
+    if pulse_data:
+        message_sender.publish_pulse(pulse_data['heart_rate'], pulse_data['spo2'])
+        pulse_data_sent = True
+        print("Emergency pulse data sent")
     
     # 4. Send gas and temperature data for environmental context
-    if 'gas_sensor' in globals():
-        gas_reading = gas_sensor.take_reading()
-        if gas_reading:
-            message_sender.publish_gas(gas_reading['value'], gas_reading['status'])
+    gas_reading = gas_sensor.take_reading()
+    if gas_reading:
+        message_sender.publish_gas(gas_reading['value'], gas_reading['status'])
     
-    if 'temp' in globals():
-        temperature = temp.getTemp(unit=1)  # Get temperature in Celsius
-        message_sender.publish_temperature(temperature)
+    temperature = temp.getTemp(unit=1)  # Get temperature in Celsius
+    message_sender.publish_temperature(temperature)
     
     print("EMERGENCY PROTOCOL COMPLETE - System requires manual reset")
 
 # Setup interrupt handlers for emergency detection
-if 'gyro' in globals():
-    # Configure gyroscope interrupt for free-fall detection on falling edge
-    gyro.int_pin.irq(trigger=Pin.IRQ_FALLING, handler=free_fall_handler)
+# Configure gyroscope interrupt for free-fall detection on falling edge
+gyro.int_pin.irq(trigger=Pin.IRQ_FALLING, handler=free_fall_handler)
 
-if 'frc_pin' in globals():
-    # Configure force sensor interrupt for impact detection on falling edge  
-    frc_pin.irq(trigger=Pin.IRQ_FALLING, handler=impact_handler)
+# Configure force sensor interrupt for impact detection on falling edge  
+frc_pin.irq(trigger=Pin.IRQ_FALLING, handler=impact_handler)
+
+belt_int = Pin(33, Pin.IN, Pin.PULL_DOWN)
 
 # Timing variables for sensor reading intervals
 last_gps_read      = 0   # Last GPS reading timestamp
@@ -112,9 +123,10 @@ while True:
     current_time = time.time()  # Get current time for interval checking
     
     while belt_int.value() == 0:
-        if b == 0:
+        #print(belt_int.value())    
+        if not b:
             buzzer.helmet_alert()
-            b = 1
+            b = not b
         
         time.sleep(1)
     else:
@@ -127,10 +139,9 @@ while True:
     
     # Handle emergency events (highest priority - non-resettable)
     if emergency_active:
-        if not 'emergency_handled' in globals():
+        if not emergency_handled:
             # First time emergency detected - execute full emergency protocol
             send_emergency_data()
-            global emergency_handled
             emergency_handled = True  # Mark emergency as handled
 
         # Send periodic emergency updates while system is active
@@ -138,7 +149,7 @@ while True:
             if free_fall:
                 emergency_msg = "FAINT"    # Free-fall likely indicates fainting
                 buzzer.faint_alert()
-            elif gas:
+            elif toxic_gas:
                 emergency_msg = "TOXIC_GAS"
                 buzzer.gas_alert()
             else:
@@ -150,7 +161,7 @@ while True:
             
     else:
         # Normal operation (only if no emergency active)
-        
+        '''
         # Periodic GPS reading with caching for power efficiency
         if 'gps' in globals() and (current_time - last_gps_read >= GPS_READ_INTERVAL):
             print("Reading GPS...")
@@ -158,9 +169,9 @@ while True:
             if location:
                 message_sender.publish_gps(location['latitude'], location['longitude'], location['altitude'])
                 last_gps_read = current_time  # Update last read timestamp
-        
+        '''
         # Periodic gas sensor reading with conditional monitoring
-        if 'gas_sensor' in globals() and (current_time - last_gas_read >= GAS_READ_INTERVAL):
+        if current_time - last_gas_read >= GAS_READ_INTERVAL:
             if gas_sensor.should_monitor_now():  # Check if monitoring is needed
                 print("Reading gas sensor...")
                 reading = gas_sensor.take_reading()
@@ -172,7 +183,7 @@ while True:
                     toxic_gas = True
                 
         # Periodic temperature reading with alert checking
-        if 'temp' in globals() and (current_time - last_temp_read >= TEMP_READ_INTERVAL):
+        if current_time - last_temp_read >= TEMP_READ_INTERVAL:
             print("Reading temperature...")
             temperature = temp.getTemp(unit=1)  # Get temperature in Celsius
             message_sender.publish_temperature(temperature)
@@ -183,7 +194,7 @@ while True:
                 message_sender.publish_status("warning", "High temperature detected")
         
         # Periodic pulse oximeter reading for health monitoring
-        if 'pulse' in globals() and (current_time - last_pulse_read >= PULSE_READ_INTERVAL):
+        if current_time - last_pulse_read >= PULSE_READ_INTERVAL:
             print("Reading pulse oximeter...")
             sensor_data = pulse.get_sensor_data()
             if sensor_data:
@@ -192,6 +203,7 @@ while True:
         
         # Periodic system status update
         if current_time - last_status_update >= STATUS_UPDATE_INTERVAL:
+            print("status")
             message_sender.publish_status("active", "System operating normally")
             last_status_update = current_time  # Update last status timestamp
     
