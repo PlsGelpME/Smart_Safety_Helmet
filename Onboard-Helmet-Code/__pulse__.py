@@ -30,7 +30,7 @@ class Pulse:
     LED_CURRENT_27MA = 0x08
     LED_CURRENT_50MA = 0x0F
     
-    def __init__(self, sda_pin=21, scl_pin=22, i2c_addr=0x57, sample_rate=100):
+    def __init__(self, sda_pin, scl_pin, i2c_addr=0x57, sample_rate=100):
         """
         Initialize pulse oximeter
         
@@ -43,7 +43,7 @@ class Pulse:
         self.i2c_addr = i2c_addr
         
         # Initialize I2C
-        self.i2c = I2C(0, sda=Pin(sda_pin), scl=Pin(scl_pin), freq=400000)
+        self.i2c = I2C(0, sda=sda_pin, scl=scl_pin, freq=400000)
         
         # Data buffers
         self.ir_buffer = []
