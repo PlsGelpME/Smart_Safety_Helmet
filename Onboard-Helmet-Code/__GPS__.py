@@ -3,7 +3,7 @@ from machine import UART, Pin
 import time
 
 class GPS:
-    def __init__(self, power_pin=23, rx_pin=16, tx_pin=17, uart_num=2, baudrate=9600):
+    def __init__(self, power_pin, rx_pin, tx_pin, uart_num=2, baudrate=9600):
         """
         GPS class for Neo-6M module with on-demand power management
         Provides location acquisition with automatic power cycling to conserve energy
@@ -15,11 +15,6 @@ class GPS:
             uart_num: UART peripheral number (1 or 2 on ESP32)
             baudrate: Communication baud rate with GPS module (typically 9600)
         """
-        self.power_pin = None
-        if power_pin is not None:
-            self.power_pin = Pin(power_pin, Pin.OUT)  # Power control pin
-            self.power_off()  # Start with GPS powered OFF for power savings
-        
         # Initialize UART communication with GPS module
         self.uart = UART(uart_num, baudrate=baudrate, rx=rx_pin, tx=tx_pin)
         self.is_powered = False  # Track current power state
@@ -27,6 +22,12 @@ class GPS:
         self.last_fix_time = 0  # Timestamp of last successful fix
         self.fix_timeout = 45  # Maximum seconds to wait for GPS fix
         
+        self.power_pin = None
+        if power_pin is not None:
+            self.power_pin = Pin(power_pin, Pin.OUT)  # Power control pin
+            self.power_pin.value(0)  # Start with GPS powered OFF for power savings
+            self.is_powered = False
+            
         print("OnDemandGPS initialized (powered OFF)")
     
     def power_on(self):
