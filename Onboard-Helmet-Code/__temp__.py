@@ -85,7 +85,7 @@ class Temp:
         Returns:
             bool: True if temperature > threshold, False otherwise
         """
-        temp = self.temp()  # Get current temperature (note: should be self.getTemp())
+        temp = self.getTemp()  # Get current temperature (note: should be self.getTemp())
         if temp > self.threshold:
             return True
         
