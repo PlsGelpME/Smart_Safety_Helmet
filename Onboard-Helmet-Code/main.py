@@ -7,13 +7,13 @@ from message_creator import MessageCreator
 from ppl_boot import boot
 
 #Constants for WiFi setup
-ssid = "OnePlus 9R"
-password = "kesav115"
+wifi_ssid = "OnePlus 9R"
+wifi_password = "kesav115"
 
 # Constants for MQTT broker configuration
 server_ip = "10.47.198.63"  # Replace with your MQTT broker IP address
-username = None             # Set if your broker requires authentication
-password = None             # Set if your broker requires authentication
+broker_username = None             # Set if your broker requires authentication
+broker_password = None             # Set if your broker requires authentication
 
 #unpacking global objects from ppl_boot
 gyro, gas_sensor, temp, pulse, buzzer, frc_pin = boot().unpack_globals()
@@ -26,14 +26,14 @@ PULSE_READ_INTERVAL    = 60       # 1 minute - Frequent health monitoring
 STATUS_UPDATE_INTERVAL = 60       # 1 minute - Regular status updates
 
 #Connecting to wifi - Mobile hotspot
-wifi = WiFiManager(ssid,password)
+wifi = WiFiManager(wifi_ssid,wifi_password)
 wifi.connect()
 ip = wifi.getIP()
 print(ip)
 
 
 # Initialize MQTT communication system
-mqtt_setup = MQTTSetup(server=server_ip, username=username, password=password)
+mqtt_setup = MQTTSetup(server=server_ip, username=broker_username, password=broker_password)
 # Get the sender function for MQTT message publishing
 sender_function = mqtt_setup.setup_connection()
 # Create message creator instance for formatting sensor data
