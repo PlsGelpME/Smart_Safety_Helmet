@@ -7,11 +7,11 @@ from message_creator import MessageCreator
 from ppl_boot import boot
 
 #Constants for WiFi setup
-wifi_ssid = "OnePlus 9R"
-wifi_password = "kesav115"
+wifi_ssid = "Your WiFi SSID"
+wifi_password = "Your WiFi Password"
 
 # Constants for MQTT broker configuration
-server_ip = "10.47.198.63"  # Replace with your MQTT broker IP address
+server_ip = "Laptop IP when connected to same WiFi"  # Replace with your MQTT broker IP address
 username = None             # Set if your broker requires authentication
 password = None             # Set if your broker requires authentication
 
@@ -28,8 +28,8 @@ STATUS_UPDATE_INTERVAL = 60       # 1 minute - Regular status updates
 #Connecting to wifi - Mobile hotspot
 wifi = WiFiManager(wifi_ssid,wifi_password)
 wifi.connect()
-ip = wifi.getIP()
-print(ip)
+#ip = wifi.getIP()
+#print(ip)
 
 
 # Initialize MQTT communication system
