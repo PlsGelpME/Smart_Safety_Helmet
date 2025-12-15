@@ -26,7 +26,7 @@ class boot:
         self.pulse_scl = Pin(22) # I2C SCL pin for pulse oximeter (I2C channel 2)
         self.frc_pin   = Pin(32) # Digital input pin for force sensor
         self.buzz_pin  = Pin(23) # Digital output pin for buzzer control
-
+        self.belt_int  = Pin(33)
         # Configure ADC attenuation for full 0-3.3V range reading
         self.temp_pin.atten(ADC.ATTN_11DB)  # 11dB attenuation allows 0-3.3V range
         self.gas_pin.atten(ADC.ATTN_11DB)   # 11dB attenuation allows 0-3.3V range
@@ -76,6 +76,11 @@ class boot:
         self.buzzer = Buzzer(
             pin = self.buzz_pin           #Digital Output Pin for PWM
         )
-    
+        
+        self.belt_int.init(
+            Pin.IN,
+            Pin.PULL_DOWN
+        )
+        
     def unpack_globals(self):
-        return (self.gyro, self.gas_sensor, self.temp, self.pulse, self.buzzer, self.frc_pin)
+        return (self.gyro, self.gas_sensor, self.temp, self.pulse, self.buzzer, self.frc_pin, self.belt_int)

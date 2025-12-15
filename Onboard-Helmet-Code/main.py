@@ -12,11 +12,11 @@ wifi_password = "kesav115"
 
 # Constants for MQTT broker configuration
 server_ip = "10.47.198.63"  # Replace with your MQTT broker IP address
-broker_username = None             # Set if your broker requires authentication
-broker_password = None             # Set if your broker requires authentication
+username = None             # Set if your broker requires authentication
+password = None             # Set if your broker requires authentication
 
 #unpacking global objects from ppl_boot
-gyro, gas_sensor, temp, pulse, buzzer, frc_pin = boot().unpack_globals()
+gyro, gas_sensor, temp, pulse, buzzer, frc_pin, belt_int = boot().unpack_globals()
 
 # Sensor reading intervals in seconds for power management
 GPS_READ_INTERVAL      = 300      # 5 minutes - GPS consumes high power
@@ -33,7 +33,7 @@ print(ip)
 
 
 # Initialize MQTT communication system
-mqtt_setup = MQTTSetup(server=server_ip, username=broker_username, password=broker_password)
+mqtt_setup = MQTTSetup(server=server_ip, username=username, password=password)
 # Get the sender function for MQTT message publishing
 sender_function = mqtt_setup.setup_connection()
 # Create message creator instance for formatting sensor data
@@ -106,8 +106,6 @@ gyro.int_pin.irq(trigger=Pin.IRQ_FALLING, handler=free_fall_handler)
 
 # Configure force sensor interrupt for impact detection on falling edge  
 frc_pin.irq(trigger=Pin.IRQ_FALLING, handler=impact_handler)
-
-belt_int = Pin(33, Pin.IN, Pin.PULL_DOWN)
 
 # Timing variables for sensor reading intervals
 last_gps_read      = 0   # Last GPS reading timestamp
